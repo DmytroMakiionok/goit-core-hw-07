@@ -75,10 +75,8 @@ def input_error(func):
 def parse_input(user_input):
     cmd, *args = user_input.split()
     return cmd, args
-
-
 @input_error
-def add_contact(args, book: AddressBook):  # Оновлена сигнатура функції
+def add_contact(args, book: AddressBook): 
     name = args[0]
     phone = args[1]
     record = book.find(name)
@@ -90,10 +88,6 @@ def add_contact(args, book: AddressBook):  # Оновлена сигнатура
     if phone:
         record.add_phone(phone)
     return message
-
-# Виклик функції add_contact з усіма необхідними аргументами
-
-
 @input_error
 def change_contact(args, book: AddressBook):
     name = args[0]
@@ -103,7 +97,6 @@ def change_contact(args, book: AddressBook):
         return "Contact updated."
     else:
         return "Contact not found."
-
 @input_error
 def get_phone(args, book: AddressBook):
     name = args[0]
@@ -111,16 +104,12 @@ def get_phone(args, book: AddressBook):
         return f"The phone number for {name} is {book.data[name].phones[0]}."
     else:
         return "Contact not found."
-
 @input_error
 def list_all_contacts(book: AddressBook):
     if not book:
         return "No contacts found."
     else:
         return "\n".join([str(record) for record in book.values()])
-
-
-
 @input_error
 def add_birthday(args, book: AddressBook):
     name = args[0]
