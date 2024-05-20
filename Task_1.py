@@ -61,25 +61,26 @@ class AddressBook(UserDict):
 def input_error(func):
     def inner(*args, **kwargs):
         try:
-            return func(*args, **kwargs)
+            return func(*args, **kwargs)     
         except KeyError:
             return "Enter the argument for the command"
-        except ValueError:
-            return "Not a valid value"
         except IndexError:
             return "Invalid index in sequence"
+        except ValueError:
+            return "ValueError"
 
     return inner
 
 @input_error
 def parse_input(user_input):
     cmd, *args = user_input.split()
-    cmd = cmd.strip().lower()
     return cmd, args
 
+
 @input_error
-def add_contact(args, book: AddressBook):
-    name, phone = args
+def add_contact(args, book: AddressBook):  # Оновлена сигнатура функції
+    name = args[0]
+    phone = args[1]
     record = book.find(name)
     message = "Contact updated."
     if record is None:
@@ -90,9 +91,13 @@ def add_contact(args, book: AddressBook):
         record.add_phone(phone)
     return message
 
+# Виклик функції add_contact з усіма необхідними аргументами
+
+
 @input_error
 def change_contact(args, book: AddressBook):
-    name, phone = args
+    name = args[0]
+    phone = args[1]
     if name in book.data:
         book.data[name].phones = [Phone(phone)]
         return "Contact updated."
@@ -114,15 +119,18 @@ def list_all_contacts(book: AddressBook):
     else:
         return "\n".join([str(record) for record in book.values()])
 
+
+
 @input_error
 def add_birthday(args, book: AddressBook):
-    name, birthday = args
+    name = args[0]
+    birthday = args[1]
     record = book.find(name)
-    if record:
-        record.add_birthday(birthday.value)
-        return f"Birthday added for {name}."
-    else:
-        return f"Contact {name} not found."    
+    message = "Birthday updated."
+    if record is None:
+        return "Contact not found."
+    record.add_birthday(birthday)
+    return message
 
 @input_error
 def show_birthday(args, book: AddressBook):
@@ -135,7 +143,6 @@ def show_birthday(args, book: AddressBook):
     else:
         return f"Contact {name} not found."
 
-@input_error
 def birthdays(args, book: AddressBook):
     today = datetime.today()
     next_week = today + timedelta(days=7)
@@ -150,13 +157,12 @@ def birthdays(args, book: AddressBook):
         return f"Upcoming birthdays next week: {', '.join(upcoming_birthdays)}."
     else:
         return "No upcoming birthdays next week."
-
 def main():
     book = AddressBook()
     print("Welcome to the assistant bot!")
     while True:
         user_input = input("Enter a command: ")
-        command, *args = parse_input(user_input)
+        command, args = parse_input(user_input)
 
         if command in ["close", "exit"]:
             print("Good bye!")
