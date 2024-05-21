@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from collections import UserDict
 
 class Field:
@@ -26,7 +26,7 @@ class Phone(Field):
 class Birthday(Field):
     def __init__(self, value):
         try:
-            self.value = datetime.strptime(value, "%d.%m.%Y")
+            self.value = datetime.strptime(value, "%d.%m.%Y").date()  
         except ValueError:
             raise ValueError("Invalid date format. Use DD.MM.YYYY")
 
@@ -48,6 +48,10 @@ class Record:
         return f"Contact name: {self.name.value}, phones: {'; '.join(str(i) for i in self.phones)}, birthday: {self.birthday}"
 
 class AddressBook(UserDict):
+    def __init__(self):
+        super().__init__()
+        self.upcoming_birthdays = []
+
     def add_record(self, record):
         self.data[record.name.value] = record
 
@@ -57,6 +61,46 @@ class AddressBook(UserDict):
     def delete(self, name):
         if name in self.data:
             del self.data[name]
+
+    def string_to_date(self, date_string):
+        return datetime.strptime(date_string, "%Y.%m.%d").date()
+
+    def date_to_string(self, date):
+        return date.strftime("%Y.%m.%d")
+
+    def prepare_user_list(self, user_data):
+        prepared_list = []
+        for user in user_data:
+            prepared_list.append({"name": user["name"], "birthday": self.string_to_date(user["birthday"])})
+        return prepared_list
+
+    def find_next_weekday(self, start_date, weekday):
+        days_ahead = weekday - start_date.weekday()
+        if days_ahead <= 0:
+            days_ahead += 7
+        return start_date + timedelta(days=days_ahead)
+
+    def adjust_for_weekend(self, birthday):
+        if birthday.weekday() >= 5:
+            return self.find_next_weekday(birthday, 0)
+        return birthday
+    
+    def get_upcoming_birthdays(self, days=7):
+        upcoming_birthdays = []
+        today = date.today()
+
+        for user in self.data.values():
+            birthday_this_year = user.birthday.value.replace(year=today.year)
+            if birthday_this_year < today:
+                birthday_this_year = birthday_this_year.replace(year=today.year + 1)
+            birthday_this_year = self.adjust_for_weekend(birthday_this_year)
+            if 0 <= (birthday_this_year - today).days <= days:
+                congratulation_date_str = self.date_to_string(birthday_this_year)
+                upcoming_birthdays.append({"name": user.name.value, "congratulation_date": congratulation_date_str})
+        if not upcoming_birthdays:
+            return "No upcoming birthdays next week."
+            
+        return upcoming_birthdays
 
 def input_error(func):
     def inner(*args, **kwargs):
@@ -131,23 +175,9 @@ def show_birthday(args, book: AddressBook):
         return f"No birthday set for {name}."
     else:
         return f"Contact {name} not found."
+    
+    
 
-@input_error    
-def date_to_string(date):
-    return date.strftime("%d.%m.%Y")
-    
-@input_error
-def get_upcoming_birthdays(book: AddressBook, days=7):
-    upcoming_birthdays = []
-    today = date.today()
-    for record in book.values():
-        if record.birthday:
-            conf_date = record.birthday.value.replace(year=today.year).date()
-            difference = (conf_date - today).days
-            if 0 <= difference <= days: 
-                upcoming_birthdays.append({"name": record.name.value, "congratulation_date": date_to_string(conf_date)})
-    return upcoming_birthdays
-    
 def main():
     book = AddressBook()
     print("Welcome to the assistant bot!")
@@ -181,8 +211,7 @@ def main():
             print(show_birthday(args, book))
 
         elif command == "birthdays":
-            print(get_upcoming_birthdays(book))
-
+            print(book.get_upcoming_birthdays())
         else:
             print("Invalid command.")
 
