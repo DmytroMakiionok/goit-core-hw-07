@@ -132,20 +132,22 @@ def show_birthday(args, book: AddressBook):
     else:
         return f"Contact {name} not found."
 
-def birthdays(args, book: AddressBook):
-    today = datetime.today()
-    next_week = today + timedelta(days=7)
+@input_error    
+def date_to_string(date):
+    return date.strftime("%d.%m.%Y")
+    
+@input_error
+def get_upcoming_birthdays(book: AddressBook, days=7):
     upcoming_birthdays = []
-
+    today = date.today()
     for record in book.values():
         if record.birthday:
-            if record.birthday.value.isocalendar()[1] == next_week.isocalendar()[1]:
-                upcoming_birthdays.append(record.name.value)
-
-    if upcoming_birthdays:
-        return f"Upcoming birthdays next week: {', '.join(upcoming_birthdays)}."
-    else:
-        return "No upcoming birthdays next week."
+            conf_date = record.birthday.value.replace(year=today.year).date()
+            difference = (conf_date - today).days
+            if 0 <= difference <= days: 
+                upcoming_birthdays.append({"name": record.name.value, "congratulation_date": date_to_string(conf_date)})
+    return upcoming_birthdays
+    
 def main():
     book = AddressBook()
     print("Welcome to the assistant bot!")
@@ -179,7 +181,7 @@ def main():
             print(show_birthday(args, book))
 
         elif command == "birthdays":
-            print(birthdays(args, book))
+            print(get_upcoming_birthdays(book))
 
         else:
             print("Invalid command.")
